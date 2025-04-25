@@ -100,6 +100,11 @@ document.addEventListener('DOMContentLoaded', () => {
       addTile();
       render();
       updateScore();
+    } else {
+      boardEl.classList.add('shake');
+      boardEl.addEventListener('animationend', () => {
+        boardEl.classList.remove('shake');
+      }, { once: true });
     }
   }
 
