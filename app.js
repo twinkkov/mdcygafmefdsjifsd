@@ -1,97 +1,131 @@
+const boardSize = 4;
 let board = [];
 let score = 0;
-let gameStarted = false;
-let timer;
-let seconds = 0;
-let minutes = 0;
+let timer = 0;
+let intervalId;
 
-const boardSize = 4;
-const tileColors = {
-    2: "#f2b179",
-    4: "#f59563",
-    8: "#f67c5f",
-    16: "#f65e3b",
-    32: "#f4cf63",
-    64: "#f3c330",
-    128: "#edcc2b",
-    256: "#edc21d",
-    512: "#edc085",
-    1024: "#edc22e",
-    2048: "#edc12b"
-};
+const boardEl = document.getElementById("board");
+const scoreEl = document.getElementById("score");
+const timerEl = document.getElementById("timer");
+const newGameBtn = document.getElementById("new-game-btn");
+const themeToggle = document.getElementById("theme-toggle");
 
-function startNewGame() {
-    score = 0;
-    board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
-    createNewTile();
-    createNewTile();
-    updateBoard();
-    gameStarted = true;
-    seconds = 0;
-    minutes = 0;
-    updateTimer();
-    startTimer();
-    document.getElementById("new-game").style.display = 'none'; // Скрываем кнопку "Новая игра" после старта
-}
-
-function createNewTile() {
-    const emptyTiles = [];
-    for (let row = 0; row < boardSize; row++) {
-        for (let col = 0; col < boardSize; col++) {
-            if (board[row][col] === 0) {
-                emptyTiles.push({ row, col });
-            }
-        }
-    }
-    if (emptyTiles.length === 0) return;
-    const randomTile = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
-    const newValue = Math.random() > 0.9 ? 4 : 2;
-    board[randomTile.row][randomTile.col] = newValue;
-    updateBoard();
+function createBoard() {
+  board = Array.from({ length: boardSize }, () => Array(boardSize).fill(0));
+  addTile();
+  addTile();
+  updateBoard();
+  resetTimer();
 }
 
 function updateBoard() {
-    const boardElement = document.getElementById("board");
-    boardElement.innerHTML = '';
-    for (let row = 0; row < boardSize; row++) {
-        for (let col = 0; col < boardSize; col++) {
-            const tileValue = board[row][col];
-            const tileElement = document.createElement("div");
-            tileElement.classList.add("tile");
-            tileElement.textContent = tileValue === 0 ? '' : tileValue;
-            if (tileValue !== 0) {
-                tileElement.style.backgroundColor = tileColors[tileValue];
-            }
-            boardElement.appendChild(tileElement);
-        }
+  boardEl.innerHTML = "";
+  board.forEach(row => {
+    row.forEach(cell => {
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      if (cell !== 0) {
+        tile.textContent = cell;
+        tile.style.background = `hsl(${Math.log2(cell) * 30}, 70%, 60%)`;
+      } else {
+        tile.textContent = "";
+      }
+      boardEl.appendChild(tile);
+    });
+  });
+}
+
+function addTile() {
+  let empty = [];
+  board.forEach((row, i) => {
+    row.forEach((cell, j) => {
+      if (cell === 0) empty.push([i, j]);
+    });
+  });
+  if (empty.length === 0) return;
+  const [x, y] = empty[Math.floor(Math.random() * empty.length)];
+  board[x][y] = Math.random() > 0.1 ? 2 : 4;
+}
+
+function move(direction) {
+  let moved = false;
+
+  const mergeRow = row => {
+    const newRow = row.filter(val => val);
+    for (let i = 0; i < newRow.length - 1; i++) {
+      if (newRow[i] === newRow[i + 1]) {
+        newRow[i] *= 2;
+        score += newRow[i];
+        newRow[i + 1] = 0;
+      }
     }
-    document.getElementById("score").textContent = `Очки: ${score}`;
-}
+    return newRow.filter(val => val).concat(Array(boardSize).fill(0)).slice(0, boardSize);
+  };
 
-function startTimer() {
-    timer = setInterval(() => {
-        seconds++;
-        if (seconds === 60) {
-            seconds = 0;
-            minutes++;
+  for (let i = 0; i < boardSize; i++) {
+    let original, processed;
+    if (direction === "left") {
+      original = board[i];
+      processed = mergeRow(original);
+      if (original.toString() !== processed.toString()) {
+        board[i] = processed;
+        moved = true;
+      }
+    } else if (direction === "right") {
+      original = [...board[i]].reverse();
+      processed = mergeRow(original).reverse();
+      if (board[i].toString() !== processed.toString()) {
+        board[i] = processed;
+        moved = true;
+      }
+    } else if (direction === "up" || direction === "down") {
+      let col = board.map(row => row[i]);
+      if (direction === "down") col = col.reverse();
+      const merged = mergeRow(col);
+      if (direction === "down") merged.reverse();
+      for (let j = 0; j < boardSize; j++) {
+        if (board[j][i] !== merged[j]) {
+          board[j][i] = merged[j];
+          moved = true;
         }
-        updateTimer();
-    }, 1000);
+      }
+    }
+  }
+
+  if (moved) {
+    addTile();
+    updateBoard();
+    updateScore();
+  }
 }
 
-function updateTimer() {
-    document.getElementById("timer").textContent = `${minutes < 10 ? '0' + minutes : minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+function updateScore() {
+  scoreEl.textContent = score;
 }
 
-document.getElementById("theme-toggle-btn").addEventListener("click", () => {
-    document.body.classList.toggle("dark-theme");
-});
-
-// Инициализация игры при загрузке
-window.onload = startNewGame;
-
-// Включаем кнопку "Новая игра" после окончания игры
-function gameOver() {
-    clearInterval(timer);
-    document.getElementById("new-game").style.display = 'block'; // Показываем кнопку "Новая игра"
+function resetTimer() {
+  clearInterval(intervalId);
+  timer = 0;
+  timerEl.textContent = `${timer}s`;
+  intervalId = setInterval(() => {
+    timer++;
+    timerEl.textContent = `${timer}s`;
+  }, 1000);
 }
+
+function handleKey(e) {
+  const key = e.key;
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) {
+    move(key.replace("Arrow", "").toLowerCase());
+  }
+}
+
+function toggleTheme() {
+  document.body.classList.toggle("dark");
+}
+
+document.addEventListener("keydown", handleKey);
+newGameBtn.addEventListener("click", createBoard);
+themeToggle.addEventListener("click", toggleTheme);
+
+createBoard();
