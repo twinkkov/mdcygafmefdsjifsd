@@ -1,8 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const size = 4;
-  let board = [];
-  let score = 0;
-  let secs = 0, mins = 0, timerId;
+  const size     = 4;
+  let board      = [];
+  let score      = 0;
+  let secs       = 0, mins = 0, timerId;
+  let startX     = 0, startY = 0;
+  const threshold = 30; // порог для свайпа
 
   const boardEl   = document.getElementById('board');
   const scoreEl   = document.getElementById('score');
@@ -10,52 +12,75 @@ document.addEventListener('DOMContentLoaded', () => {
   const newBtn    = document.getElementById('new-game-btn');
   const themeBtn  = document.getElementById('theme-toggle');
 
-  // Создаёт пустое поле и две стартовые плитки
+  // Инициализация игры
   function init() {
     clearInterval(timerId);
     board = Array.from({ length: size }, () => Array(size).fill(0));
     score = 0; secs = 0; mins = 0;
-    addTile();
-    addTile();
+    addTile(); addTile();
     render();
     updateScore();
     updateTimer();
     startTimer();
   }
 
-  // Клонирование сетки
-  function cloneGrid(g) {
-    return g.map(row => row.slice());
+  // Добавление новой плитки
+  function addTile() {
+    const empties = [];
+    board.forEach((row, r) =>
+      row.forEach((v, c) => { if (v === 0) empties.push([r, c]); })
+    );
+    if (!empties.length) return;
+    const [r, c] = empties[Math.floor(Math.random() * empties.length)];
+    board[r][c] = Math.random() < 0.9 ? 2 : 4;
   }
 
-  // Сжатие одной строки: удаляем нули и добиваем нулями справа
+  // Отрисовка поля
+  function render() {
+    boardEl.innerHTML = '';
+    board.forEach(row =>
+      row.forEach(val => {
+        const tile = document.createElement('div');
+        tile.className = 'tile new';
+        const inner = document.createElement('div');
+        inner.className = 'value';
+        if (val) {
+          inner.textContent = val;
+          const hue = Math.log2(val) * 30;
+          tile.style.background = `hsl(${hue},70%,60%)`;
+        }
+        tile.appendChild(inner);
+        boardEl.appendChild(tile);
+      })
+    );
+  }
+
+  // Сжатие строки
   function compress(row) {
     const filtered = row.filter(v => v !== 0);
     return filtered.concat(Array(size - filtered.length).fill(0));
   }
 
-  // Слияние одной строки (после сжатия), начисление очков
+  // Слияние строк
   function merge(row) {
     for (let i = 0; i < size - 1; i++) {
       if (row[i] !== 0 && row[i] === row[i + 1]) {
         row[i] *= 2;
         score += row[i];
         row[i + 1] = 0;
+        // анимация merge
+        // можно добавить: mark for merge
       }
     }
     return row;
   }
 
-  // Движение влево по строке
+  // Движение влево
   function moveLeft(grid) {
-    return grid.map(row => {
-      const c = compress(row);
-      const m = merge(c);
-      return compress(m);
-    });
+    return grid.map(row => compress(merge(compress(row))));
   }
 
-  // Поворот сетки 90° по часовой
+  // Поворот сетки на 90°
   function rotate(grid) {
     const newGrid = Array.from({ length: size }, () => Array(size).fill(0));
     for (let r = 0; r < size; r++) {
@@ -66,33 +91,25 @@ document.addEventListener('DOMContentLoaded', () => {
     return newGrid;
   }
 
-  // Обработка любого движения: left/up/right/down
+  // Универсальное движение
   function move(dir) {
     let newGrid;
     switch (dir) {
       case 'left':
         newGrid = moveLeft(board);
         break;
-      case 'up':
-        newGrid = rotate(rotate(rotate(board)));
-        newGrid = moveLeft(newGrid);
-        newGrid = rotate(newGrid);
-        break;
       case 'right':
-        newGrid = rotate(rotate(board));
-        newGrid = moveLeft(newGrid);
-        newGrid = rotate(rotate(newGrid));
+        newGrid = rotate(rotate(moveLeft(rotate(rotate(board)))));
+        break;
+      case 'up':
+        newGrid = rotate(moveLeft(rotate(rotate(rotate(board)))));
         break;
       case 'down':
-        newGrid = rotate(board);
-        newGrid = moveLeft(newGrid);
-        newGrid = rotate(rotate(rotate(newGrid)));
+        newGrid = rotate(rotate(rotate(moveLeft(rotate(board)))));
         break;
       default:
         return;
     }
-
-    // Проверяем, изменилось ли
     if (JSON.stringify(board) !== JSON.stringify(newGrid)) {
       board = newGrid;
       addTile();
@@ -101,35 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Спавн новой плитки (2 или 4) в рандомном пустом месте
-  function addTile() {
-    const empties = [];
-    board.forEach((row, r) => row.forEach((v, c) => {
-      if (v === 0) empties.push([r, c]);
-    }));
-    if (empties.length === 0) return;
-    const [r, c] = empties[Math.floor(Math.random() * empties.length)];
-    board[r][c] = Math.random() < 0.9 ? 2 : 4;
-  }
-
-  // Рендер сетки в DOM
-  function render() {
-    boardEl.innerHTML = '';
-    board.forEach(row => {
-      row.forEach(val => {
-        const tile = document.createElement('div');
-        tile.className = 'tile new';             // для pop-in css
-        if (val) {
-          tile.textContent = val;
-          const hue = Math.log2(val) * 30;
-          tile.style.background = `hsl(${hue},70%,60%)`;
-        }
-        boardEl.appendChild(tile);
-      });
-    });
-  }
-
-  // Обновляем счёт
+  // Обновить счёт
   function updateScore() {
     scoreEl.textContent = score;
   }
@@ -149,19 +138,34 @@ document.addEventListener('DOMContentLoaded', () => {
     timerEl.textContent = `${mm}:${ss}`;
   }
 
-  // Слушатели
+  // Клавиши стрелок
   document.addEventListener('keydown', e => {
-    const map = {
-      ArrowLeft:  'left',
-      ArrowRight: 'right',
-      ArrowUp:    'up',
-      ArrowDown:  'down'
-    };
+    const map = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' };
     if (map[e.key]) move(map[e.key]);
   });
+
+  // Свайпы для мобильных
+  boardEl.addEventListener('touchstart', e => {
+    const t = e.changedTouches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+  }, { passive: true });
+
+  boardEl.addEventListener('touchend', e => {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+      move(dx > 0 ? 'right' : 'left');
+    } else if (Math.abs(dy) > threshold) {
+      move(dy > 0 ? 'down' : 'up');
+    }
+  }, { passive: true });
+
+  // Кнопки UI
   newBtn.addEventListener('click', init);
   themeBtn.addEventListener('click', () => document.body.classList.toggle('dark'));
 
-  // Старт
+  // Старт игры
   init();
 });
