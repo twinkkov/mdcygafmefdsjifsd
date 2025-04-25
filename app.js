@@ -1,62 +1,172 @@
-const { useState, useEffect } = React;
+// Инициализация игрового поля
+const gameContainer = document.getElementById('game-container');
+const newGameButton = document.getElementById('new-game-button');
 
-const SIZE = 4;
+// Размер поля
+const gridSize = 4;
 
-const App = () => {
-  const [board, setBoard] = useState(createEmptyBoard());
-  const [score, setScore] = useState(0);
+// Состояние игры
+let board = [];
+let gameOver = false;
 
-  useEffect(() => {
-    addRandomTile(board, setBoard);
-  }, []);
+// Инициализация поля
+function initializeBoard() {
+  board = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
+  spawnTile();
+  spawnTile();
+  renderBoard();
+  gameOver = false;
+}
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'ArrowUp') moveUp();
-    if (e.key === 'ArrowDown') moveDown();
-    if (e.key === 'ArrowLeft') moveLeft();
-    if (e.key === 'ArrowRight') moveRight();
-  };
+// Отрисовка игрового поля
+function renderBoard() {
+  gameContainer.innerHTML = ''; // Очистить контейнер
+  board.forEach(row => {
+    row.forEach(cell => {
+      const cellElement = document.createElement('div');
+      cellElement.classList.add('cell');
+      if (cell !== 0) {
+        cellElement.textContent = cell;
+        cellElement.setAttribute('data-value', cell);
+      }
+      gameContainer.appendChild(cellElement);
+    });
+  });
+}
 
-  const addRandomTile = (board, setBoard) => {
-    const emptyCells = [];
-    for (let row = 0; row < SIZE; row++) {
-      for (let col = 0; col < SIZE; col++) {
-        if (board[row][col] === 0) emptyCells.push([row, col]);
+// Спавн новой плитки
+function spawnTile() {
+  const emptyCells = [];
+  for (let r = 0; r < gridSize; r++) {
+    for (let c = 0; c < gridSize; c++) {
+      if (board[r][c] === 0) {
+        emptyCells.push({ row: r, col: c });
       }
     }
-    if (emptyCells.length === 0) return;
-    const [row, col] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-    const newBoard = [...board];
-    newBoard[row][col] = Math.random() > 0.1 ? 2 : 4;
-    setBoard(newBoard);
-  };
+  }
+  
+  if (emptyCells.length > 0) {
+    const { row, col } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    board[row][col] = Math.random() < 0.9 ? 2 : 4;
+  }
+}
 
-  const moveUp = () => { /* Логика для движения вверх */ };
-  const moveDown = () => { /* Логика для движения вниз */ };
-  const moveLeft = () => { /* Логика для движения влево */ };
-  const moveRight = () => { /* Логика для движения вправо */ };
+// Обработка нажатий клавиш
+document.addEventListener('keydown', (event) => {
+  if (gameOver) return;
 
-  return (
-    <div className="container mx-auto mt-5">
-      <div className="text-center mb-4">
-        <h1 className="text-4xl font-bold">2048</h1>
-        <h2 className="text-2xl mt-2">Score: {score}</h2>
-      </div>
-      <div className="grid grid-cols-4 gap-4">
-        {board.map((row, rowIndex) => (
-          row.map((cell, colIndex) => (
-            <div key={`${rowIndex}-${colIndex}`} className={`w-20 h-20 flex items-center justify-center bg-${cell === 0 ? 'gray-400' : 'blue-500'} rounded-lg text-xl`}>
-              {cell !== 0 ? cell : ''}
-            </div>
-          ))
-        ))}
-      </div>
-    </div>
-  );
-};
+  switch (event.key) {
+    case 'ArrowUp':
+      moveUp();
+      break;
+    case 'ArrowDown':
+      moveDown();
+      break;
+    case 'ArrowLeft':
+      moveLeft();
+      break;
+    case 'ArrowRight':
+      moveRight();
+      break;
+  }
 
-const createEmptyBoard = () => {
-  return Array(SIZE).fill().map(() => Array(SIZE).fill(0));
-};
+  spawnTile();
+  renderBoard();
 
-ReactDOM.render(<App />, document.getElementById('root'));
+  // Проверка на конец игры
+  if (isGameOver()) {
+    gameOver = true;
+    alert("Game Over!");
+  }
+});
+
+// Логика движения и слияния плиток
+function moveUp() {
+  for (let c = 0; c < gridSize; c++) {
+    let column = [];
+    for (let r = 0; r < gridSize; r++) {
+      if (board[r][c] !== 0) column.push(board[r][c]);
+    }
+    column = merge(column);
+    for (let r = 0; r < gridSize; r++) {
+      board[r][c] = column[r] || 0;
+    }
+  }
+}
+
+function moveDown() {
+  for (let c = 0; c < gridSize; c++) {
+    let column = [];
+    for (let r = gridSize - 1; r >= 0; r--) {
+      if (board[r][c] !== 0) column.push(board[r][c]);
+    }
+    column = merge(column);
+    for (let r = gridSize - 1; r >= 0; r--) {
+      board[r][c] = column[gridSize - r - 1] || 0;
+    }
+  }
+}
+
+function moveLeft() {
+  for (let r = 0; r < gridSize; r++) {
+    let row = [];
+    for (let c = 0; c < gridSize; c++) {
+      if (board[r][c] !== 0) row.push(board[r][c]);
+    }
+    row = merge(row);
+    for (let c = 0; c < gridSize; c++) {
+      board[r][c] = row[c] || 0;
+    }
+  }
+}
+
+function moveRight() {
+  for (let r = 0; r < gridSize; r++) {
+    let row = [];
+    for (let c = gridSize - 1; c >= 0; c--) {
+      if (board[r][c] !== 0) row.push(board[r][c]);
+    }
+    row = merge(row);
+    for (let c = gridSize - 1; c >= 0; c--) {
+      board[r][c] = row[gridSize - c - 1] || 0;
+    }
+  }
+}
+
+// Функция для слияния плиток
+function merge(array) {
+  let result = [];
+  let i = 0;
+  
+  while (i < array.length) {
+    if (array[i] === array[i + 1]) {
+      result.push(array[i] * 2);
+      i += 2;
+    } else {
+      result.push(array[i]);
+      i++;
+    }
+  }
+  
+  return result;
+}
+
+// Проверка на конец игры
+function isGameOver() {
+  for (let r = 0; r < gridSize; r++) {
+    for (let c = 0; c < gridSize; c++) {
+      if (board[r][c] === 0) return false;
+      if (r < gridSize - 1 && board[r][c] === board[r + 1][c]) return false;
+      if (c < gridSize - 1 && board[r][c] === board[r][c + 1]) return false;
+    }
+  }
+  return true;
+}
+
+// Сброс игры
+newGameButton.addEventListener('click', () => {
+  initializeBoard();
+});
+
+// Запуск игры
+initializeBoard();
