@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const size     = 4;
-  let board      = [];
-  let score      = 0;
-  let secs       = 0, mins = 0, timerId;
-  let startX     = 0, startY = 0;
-  const threshold = 30; // порог для свайпа
+  const size      = 4;
+  let board       = [];
+  let score       = 0;
+  let secs        = 0, mins = 0, timerId;
+  let startX      = 0, startY = 0;
+  const threshold = 30;
 
   const boardEl   = document.getElementById('board');
   const scoreEl   = document.getElementById('score');
@@ -12,19 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const newBtn    = document.getElementById('new-game-btn');
   const themeBtn  = document.getElementById('theme-toggle');
 
-  // Инициализация игры
   function init() {
     clearInterval(timerId);
     board = Array.from({ length: size }, () => Array(size).fill(0));
     score = 0; secs = 0; mins = 0;
     addTile(); addTile();
-    render();
-    updateScore();
-    updateTimer();
-    startTimer();
+    render(); updateScore(); updateTimer(); startTimer();
   }
 
-  // Добавление новой плитки
   function addTile() {
     const empties = [];
     board.forEach((row, r) =>
@@ -35,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
     board[r][c] = Math.random() < 0.9 ? 2 : 4;
   }
 
-  // Отрисовка поля
   function render() {
     boardEl.innerHTML = '';
     board.forEach(row =>
@@ -55,75 +49,64 @@ document.addEventListener('DOMContentLoaded', () => {
     );
   }
 
-  // Сжатие строки
   function compress(row) {
     const filtered = row.filter(v => v !== 0);
     return filtered.concat(Array(size - filtered.length).fill(0));
   }
 
-  // Слияние строк
   function merge(row) {
     for (let i = 0; i < size - 1; i++) {
       if (row[i] !== 0 && row[i] === row[i + 1]) {
         row[i] *= 2;
         score += row[i];
         row[i + 1] = 0;
-        // анимация merge
-        // можно добавить: mark for merge
       }
     }
     return row;
   }
 
-  // Движение влево
   function moveLeft(grid) {
-    return grid.map(row => compress(merge(compress(row))));
+    return grid.map(r => compress(merge(compress(r))));
   }
 
-  // Поворот сетки на 90°
   function rotate(grid) {
-    const newGrid = Array.from({ length: size }, () => Array(size).fill(0));
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        newGrid[c][size - r - 1] = grid[r][c];
-      }
-    }
-    return newGrid;
+    return Array.from({ length: size }, (_, r) =>
+      Array.from({ length: size }, (_, c) =>
+        grid[size - c - 1][r]
+      )
+    );
   }
 
-  // Универсальное движение
   function move(dir) {
-    let newGrid;
+    let ng;
     switch (dir) {
       case 'left':
-        newGrid = moveLeft(board);
+        ng = moveLeft(board);
         break;
       case 'right':
-        newGrid = rotate(rotate(moveLeft(rotate(rotate(board)))));
+        ng = rotate(rotate(moveLeft(rotate(rotate(board)))));
         break;
       case 'up':
-        newGrid = rotate(moveLeft(rotate(rotate(rotate(board)))));
+        ng = rotate(moveLeft(rotate(rotate(rotate(board)))));
         break;
       case 'down':
-        newGrid = rotate(rotate(rotate(moveLeft(rotate(board)))));
+        ng = rotate(rotate(rotate(moveLeft(rotate(board)))));
         break;
       default:
         return;
     }
-    if (JSON.stringify(board) !== JSON.stringify(newGrid)) {
-      board = newGrid;
+    if (JSON.stringify(board) !== JSON.stringify(ng)) {
+      board = ng;
       addTile();
       render();
       updateScore();
     }
   }
 
-  // Обновить счёт
   function updateScore() {
     scoreEl.textContent = score;
   }
 
-  // Таймер
   function startTimer() {
     clearInterval(timerId);
     timerId = setInterval(() => {
@@ -132,23 +115,26 @@ document.addEventListener('DOMContentLoaded', () => {
       updateTimer();
     }, 1000);
   }
+
   function updateTimer() {
     const mm = String(mins).padStart(2, '0');
     const ss = String(secs).padStart(2, '0');
     timerEl.textContent = `${mm}:${ss}`;
   }
 
-  // Клавиши стрелок
   document.addEventListener('keydown', e => {
-    const map = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' };
+    const map = {
+      ArrowLeft:  'left',
+      ArrowRight: 'right',
+      ArrowUp:    'up',
+      ArrowDown:  'down'
+    };
     if (map[e.key]) move(map[e.key]);
   });
 
-  // Свайпы для мобильных
   boardEl.addEventListener('touchstart', e => {
     const t = e.changedTouches[0];
-    startX = t.clientX;
-    startY = t.clientY;
+    startX = t.clientX; startY = t.clientY;
   }, { passive: true });
 
   boardEl.addEventListener('touchend', e => {
@@ -162,10 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, { passive: true });
 
-  // Кнопки UI
   newBtn.addEventListener('click', init);
   themeBtn.addEventListener('click', () => document.body.classList.toggle('dark'));
 
-  // Старт игры
   init();
 });
