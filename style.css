@@ -81,12 +81,6 @@ body {
     background-color: #edc22e;
   }
   
-  /* Эффект для анимации */
-  .cell.merge {
-    transform: scale(1.2);
-    transition: transform 0.1s ease-in-out;
-  }
-  
   /* Стили для кнопок */
   button {
     padding: 10px 20px;
@@ -97,6 +91,7 @@ body {
     cursor: pointer;
     font-size: 16px;
     transition: background-color 0.3s;
+    margin-top: 20px;
   }
   
   button:hover {

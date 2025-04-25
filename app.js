@@ -167,6 +167,9 @@ function isGameOver() {
 newGameButton.addEventListener('click', () => {
   initializeBoard();
 });
-
+// Обработчик для кнопки "Новая игра"
+newGameButton.addEventListener('click', () => {
+  initializeBoard(); // Запуск новой игры
+});
 // Запуск игры
 initializeBoard();
