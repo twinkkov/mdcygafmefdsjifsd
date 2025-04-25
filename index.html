@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>2048 Telegram</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -12,13 +12,16 @@
       <h1>2048</h1>
       <div class="info">
         <div class="score">Score: <span id="score">0</span></div>
-        <div class="timer">Time: <span id="timer">0s</span></div>
+        <div class="timer">Time: <span id="timer">00:00</span></div>
       </div>
-      <button id="new-game-btn">New Game</button>
-      <button id="theme-toggle">🌓</button>
+      <div class="controls">
+        <button id="new-game-btn">New Game</button>
+        <button id="theme-toggle">🌓</button>
+      </div>
     </header>
-    
-    <div class="board" id="board"></div>
+    <main>
+      <div class="board" id="board"></div>
+    </main>
   </div>
 
   <script src="app.js"></script>
