@@ -1,60 +1,30 @@
+/* === Основная стилизация === */
 :root {
     --bg-light: #f9f9f9;
-    --bg-dark: #1e1e1e;
-    --text-light: #333;
-    --text-dark: #f9f9f9;
+    --bg-dark:  #1e1e1e;
     --board-bg: #bbada0;
   }
   
   body {
-    margin: 0;
+    margin: 0; padding: 0;
     font-family: 'Segoe UI', sans-serif;
     background: var(--bg-light);
-    color: var(--text-light);
-    transition: background 0.3s, color 0.3s;
+    transition: background 0.3s ease, color 0.3s ease; /* плавность темы :contentReference[oaicite:1]{index=1} */
+    color: #333;
   }
+  
   body.dark {
     background: var(--bg-dark);
-    color: var(--text-dark);
+    color: #f9f9f9;
   }
   
   .container {
     max-width: 360px;
-    margin: 20px auto;
-    padding: 0 10px;
+    margin: 24px auto;
+    padding: 0 12px;
   }
   
-  header h1 {
-    margin: 0;
-    text-align: center;
-  }
-  
-  .info {
-    display: flex;
-    justify-content: space-between;
-    margin: 10px 0;
-  }
-  
-  .controls {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  
-  button {
-    padding: 8px 12px;
-    font-size: 16px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    background: #ffcc00;
-    transition: background 0.2s;
-  }
-  button:hover {
-    background: #e6b800;
-  }
-  
+  /* === Board & Tiles === */
   .board {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -64,34 +34,67 @@
     border-radius: 8px;
   }
   
+  /* Базовый стиль плитки */
   .tile {
     position: relative;
-    width: 80px;
-    height: 80px;
+    width: 100%;
+    padding-bottom: 100%; /* чтобы соблюсти квадрат */
     background: #eee4da;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 24px;
     border-radius: 6px;
-    transition: transform 0.2s ease, background 0.2s ease;
+    overflow: hidden;
+    cursor: default;
+    transform: scale(1);
+    transition: background 0.3s ease, transform 0.2s ease; /* hover-lift */ 
   }
   
+  /* Цветовая градация via inline style или класс */
   body.dark .tile {
     background: #3c3c3c;
     color: #f9f9f9;
   }
   
+  /* Центрируем число внутри */
+  .tile > .value {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: bold;
+  }
+  
+  /* === Pop-in для новых плиток === */
+  @keyframes popIn {
+    0%   { transform: scale(0.4); opacity: 0; }
+    60%  { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+  .tile.new {
+    animation: popIn 0.3s ease forwards; /* мгновенное проявление */
+  }
+  
+  /* === Pulse-merge при объединении === */
+  @keyframes mergePulse {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .tile.merge {
+    animation: mergePulse 0.25s ease-in-out forwards;
+  }
+  
+  /* === Hover-lift для интерактивности === */
+  .tile:hover {
+    transform: translateY(-5px) scale(1.03);
+  }
+  
+  /* === Адаптивность для мобилок === */
   @media (max-width: 400px) {
     .board {
       gap: 6px;
       padding: 6px;
     }
-    .tile {
-      width: 60px;
-      height: 60px;
-      font-size: 20px;
+    .tile > .value {
+      font-size: 18px;
     }
   }
   
