@@ -1,190 +1,97 @@
 let board = [];
-let timerDisplay = document.getElementById('timer');
+let score = 0;
+let gameStarted = false;
 let timer;
-let timerInterval;
-let timeElapsed = 0;
+let seconds = 0;
+let minutes = 0;
 
-const gridSize = 4;
-let gameOver = false;
-
-document.addEventListener('DOMContentLoaded', function () {
-    const newGameButton = document.getElementById('new-game');
-    if (newGameButton) {
-        newGameButton.addEventListener('click', startNewGame);
-    }
-});
+const boardSize = 4;
+const tileColors = {
+    2: "#f2b179",
+    4: "#f59563",
+    8: "#f67c5f",
+    16: "#f65e3b",
+    32: "#f4cf63",
+    64: "#f3c330",
+    128: "#edcc2b",
+    256: "#edc21d",
+    512: "#edc085",
+    1024: "#edc22e",
+    2048: "#edc12b"
+};
 
 function startNewGame() {
-    timer = 0;
-    stopTimer();
+    score = 0;
+    board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
+    createNewTile();
+    createNewTile();
+    updateBoard();
+    gameStarted = true;
+    seconds = 0;
+    minutes = 0;
+    updateTimer();
     startTimer();
-    initializeBoard();
+    document.getElementById("new-game").style.display = 'none'; // Скрываем кнопку "Новая игра" после старта
 }
 
-function initializeBoard() {
-  board = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
-  spawnTile();
-  spawnTile();
-  updateBoardDisplay();
-  gameOver = false;
-}
-
-function spawnTile() {
-  const emptyCells = [];
-  for (let r = 0; r < gridSize; r++) {
-    for (let c = 0; c < gridSize; c++) {
-      if (board[r][c] === 0) {
-        emptyCells.push({ row: r, col: c });
-      }
+function createNewTile() {
+    const emptyTiles = [];
+    for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+            if (board[row][col] === 0) {
+                emptyTiles.push({ row, col });
+            }
+        }
     }
-  }
-
-  if (emptyCells.length > 0) {
-    const { row, col } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-    board[row][col] = Math.random() < 0.9 ? 2 : 4;
-  }
+    if (emptyTiles.length === 0) return;
+    const randomTile = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+    const newValue = Math.random() > 0.9 ? 4 : 2;
+    board[randomTile.row][randomTile.col] = newValue;
+    updateBoard();
 }
 
-function updateBoardDisplay() {
-  let boardElement = document.getElementById('board');
-  boardElement.innerHTML = ''; // Clear the board
-
-  for (let i = 0; i < gridSize; i++) {
-    for (let j = 0; j < gridSize; j++) {
-      let tileValue = board[i][j];
-      if (tileValue === 0) continue;
-
-      let tile = document.createElement('div');
-      tile.classList.add('tile');
-      tile.textContent = tileValue;
-      tile.style.gridColumnStart = j + 1;
-      tile.style.gridRowStart = i + 1;
-      boardElement.appendChild(tile);
+function updateBoard() {
+    const boardElement = document.getElementById("board");
+    boardElement.innerHTML = '';
+    for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+            const tileValue = board[row][col];
+            const tileElement = document.createElement("div");
+            tileElement.classList.add("tile");
+            tileElement.textContent = tileValue === 0 ? '' : tileValue;
+            if (tileValue !== 0) {
+                tileElement.style.backgroundColor = tileColors[tileValue];
+            }
+            boardElement.appendChild(tileElement);
+        }
     }
-  }
+    document.getElementById("score").textContent = `Очки: ${score}`;
 }
 
 function startTimer() {
-    timer = 0;
-    clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-        timer++;
-        document.getElementById('timer').textContent = `Время: ${timer} секунд`;
+    timer = setInterval(() => {
+        seconds++;
+        if (seconds === 60) {
+            seconds = 0;
+            minutes++;
+        }
+        updateTimer();
     }, 1000);
 }
 
-function stopTimer() {
-    clearInterval(timerInterval);
+function updateTimer() {
+    document.getElementById("timer").textContent = `${minutes < 10 ? '0' + minutes : minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
 }
 
-// Movement and merging logic
-document.addEventListener('keydown', (event) => {
-  if (gameOver) return;
-
-  switch (event.key) {
-    case 'ArrowUp':
-      moveUp();
-      break;
-    case 'ArrowDown':
-      moveDown();
-      break;
-    case 'ArrowLeft':
-      moveLeft();
-      break;
-    case 'ArrowRight':
-      moveRight();
-      break;
-  }
-
-  spawnTile();
-  updateBoardDisplay();
-
-  if (isGameOver()) {
-    gameOver = true;
-    clearInterval(timerInterval);
-    alert("Game Over!");
-  }
+document.getElementById("theme-toggle-btn").addEventListener("click", () => {
+    document.body.classList.toggle("dark-theme");
 });
 
-function moveUp() {
-  for (let c = 0; c < gridSize; c++) {
-    let column = [];
-    for (let r = 0; r < gridSize; r++) {
-      if (board[r][c] !== 0) column.push(board[r][c]);
-    }
-    column = merge(column);
-    for (let r = 0; r < gridSize; r++) {
-      board[r][c] = column[r] || 0;
-    }
-  }
+// Инициализация игры при загрузке
+window.onload = startNewGame;
+
+// Включаем кнопку "Новая игра" после окончания игры
+function gameOver() {
+    clearInterval(timer);
+    document.getElementById("new-game").style.display = 'block'; // Показываем кнопку "Новая игра"
 }
-
-function moveDown() {
-  for (let c = 0; c < gridSize; c++) {
-    let column = [];
-    for (let r = gridSize - 1; r >= 0; r--) {
-      if (board[r][c] !== 0) column.push(board[r][c]);
-    }
-    column = merge(column);
-    for (let r = gridSize - 1; r >= 0; r--) {
-      board[r][c] = column[gridSize - r - 1] || 0;
-    }
-  }
-}
-
-function moveLeft() {
-  for (let r = 0; r < gridSize; r++) {
-    let row = [];
-    for (let c = 0; c < gridSize; c++) {
-      if (board[r][c] !== 0) row.push(board[r][c]);
-    }
-    row = merge(row);
-    for (let c = 0; c < gridSize; c++) {
-      board[r][c] = row[c] || 0;
-    }
-  }
-}
-
-function moveRight() {
-  for (let r = 0; r < gridSize; r++) {
-    let row = [];
-    for (let c = gridSize - 1; c >= 0; c--) {
-      if (board[r][c] !== 0) row.push(board[r][c]);
-    }
-    row = merge(row);
-    for (let c = gridSize - 1; c >= 0; c--) {
-      board[r][c] = row[gridSize - c - 1] || 0;
-    }
-  }
-}
-
-function merge(array) {
-  let result = [];
-  let i = 0;
-
-  while (i < array.length) {
-    if (array[i] === array[i + 1]) {
-      result.push(array[i] * 2);
-      i += 2;
-    } else {
-      result.push(array[i]);
-      i++;
-    }
-  }
-
-  return result;
-}
-
-function isGameOver() {
-  for (let r = 0; r < gridSize; r++) {
-    for (let c = 0; c < gridSize; c++) {
-      if (board[r][c] === 0) return false;
-      if (r < gridSize - 1 && board[r][c] === board[r + 1][c]) return false;
-      if (c < gridSize - 1 && board[r][c] === board[r][c + 1]) return false;
-    }
-  }
-  return true;
-}
-
-// Starting the first game
-startNewGame();

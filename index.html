@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,12 +7,16 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
-        <div class="controls">
-            <button id="new-game" class="btn">Новая игра</button>
-            <div id="timer" class="timer">0</div>
+    <div class="theme-toggle">
+        <button id="theme-toggle-btn">Переключить тему</button>
+    </div>
+    <div id="game-container">
+        <div id="score">Очки: 0</div>
+        <div id="board">
+            <!-- Игровое поле будет сгенерировано динамически -->
         </div>
-        <div id="board" class="board"></div>
+        <div id="timer">00:00</div>
+        <button id="new-game" onclick="startNewGame()">Новая игра</button>
     </div>
     <script src="app.js"></script>
 </body>
