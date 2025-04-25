@@ -1,17 +1,24 @@
 let board = [];
-let newGameButton = document.getElementById('new-game');
 let timerDisplay = document.getElementById('timer');
 let timer;
+let timerInterval;
 let timeElapsed = 0;
 
 const gridSize = 4;
 let gameOver = false;
 
-newGameButton.addEventListener('click', startNewGame);
+document.addEventListener('DOMContentLoaded', function () {
+    const newGameButton = document.getElementById('new-game');
+    if (newGameButton) {
+        newGameButton.addEventListener('click', startNewGame);
+    }
+});
 
 function startNewGame() {
-  initializeBoard();
-  startTimer();
+    timer = 0;
+    stopTimer();
+    startTimer();
+    initializeBoard();
 }
 
 function initializeBoard() {
@@ -58,13 +65,16 @@ function updateBoardDisplay() {
 }
 
 function startTimer() {
-  timeElapsed = 0;
-  if (timer) clearInterval(timer);
+    timer = 0;
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        timer++;
+        document.getElementById('timer').textContent = `Время: ${timer} секунд`;
+    }, 1000);
+}
 
-  timer = setInterval(function() {
-    timeElapsed++;
-    timerDisplay.textContent = timeElapsed;
-  }, 1000);
+function stopTimer() {
+    clearInterval(timerInterval);
 }
 
 // Movement and merging logic
@@ -91,7 +101,7 @@ document.addEventListener('keydown', (event) => {
 
   if (isGameOver()) {
     gameOver = true;
-    clearInterval(timer);
+    clearInterval(timerInterval);
     alert("Game Over!");
   }
 });
