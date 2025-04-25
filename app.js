@@ -1,40 +1,27 @@
-// Инициализация игрового поля
-const gameContainer = document.getElementById('game-container');
-const newGameButton = document.getElementById('new-game-button');
-
-// Размер поля
-const gridSize = 4;
-
-// Состояние игры
 let board = [];
+let newGameButton = document.getElementById('new-game');
+let timerDisplay = document.getElementById('timer');
+let timer;
+let timeElapsed = 0;
+
+const gridSize = 4;
 let gameOver = false;
 
-// Инициализация поля
+newGameButton.addEventListener('click', startNewGame);
+
+function startNewGame() {
+  initializeBoard();
+  startTimer();
+}
+
 function initializeBoard() {
   board = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
   spawnTile();
   spawnTile();
-  renderBoard();
+  updateBoardDisplay();
   gameOver = false;
 }
 
-// Отрисовка игрового поля
-function renderBoard() {
-  gameContainer.innerHTML = ''; // Очистить контейнер
-  board.forEach(row => {
-    row.forEach(cell => {
-      const cellElement = document.createElement('div');
-      cellElement.classList.add('cell');
-      if (cell !== 0) {
-        cellElement.textContent = cell;
-        cellElement.setAttribute('data-value', cell);
-      }
-      gameContainer.appendChild(cellElement);
-    });
-  });
-}
-
-// Спавн новой плитки
 function spawnTile() {
   const emptyCells = [];
   for (let r = 0; r < gridSize; r++) {
@@ -44,14 +31,43 @@ function spawnTile() {
       }
     }
   }
-  
+
   if (emptyCells.length > 0) {
     const { row, col } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
     board[row][col] = Math.random() < 0.9 ? 2 : 4;
   }
 }
 
-// Обработка нажатий клавиш
+function updateBoardDisplay() {
+  let boardElement = document.getElementById('board');
+  boardElement.innerHTML = ''; // Clear the board
+
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      let tileValue = board[i][j];
+      if (tileValue === 0) continue;
+
+      let tile = document.createElement('div');
+      tile.classList.add('tile');
+      tile.textContent = tileValue;
+      tile.style.gridColumnStart = j + 1;
+      tile.style.gridRowStart = i + 1;
+      boardElement.appendChild(tile);
+    }
+  }
+}
+
+function startTimer() {
+  timeElapsed = 0;
+  if (timer) clearInterval(timer);
+
+  timer = setInterval(function() {
+    timeElapsed++;
+    timerDisplay.textContent = timeElapsed;
+  }, 1000);
+}
+
+// Movement and merging logic
 document.addEventListener('keydown', (event) => {
   if (gameOver) return;
 
@@ -71,16 +87,15 @@ document.addEventListener('keydown', (event) => {
   }
 
   spawnTile();
-  renderBoard();
+  updateBoardDisplay();
 
-  // Проверка на конец игры
   if (isGameOver()) {
     gameOver = true;
+    clearInterval(timer);
     alert("Game Over!");
   }
 });
 
-// Логика движения и слияния плиток
 function moveUp() {
   for (let c = 0; c < gridSize; c++) {
     let column = [];
@@ -133,11 +148,10 @@ function moveRight() {
   }
 }
 
-// Функция для слияния плиток
 function merge(array) {
   let result = [];
   let i = 0;
-  
+
   while (i < array.length) {
     if (array[i] === array[i + 1]) {
       result.push(array[i] * 2);
@@ -147,11 +161,10 @@ function merge(array) {
       i++;
     }
   }
-  
+
   return result;
 }
 
-// Проверка на конец игры
 function isGameOver() {
   for (let r = 0; r < gridSize; r++) {
     for (let c = 0; c < gridSize; c++) {
@@ -163,13 +176,5 @@ function isGameOver() {
   return true;
 }
 
-// Сброс игры
-newGameButton.addEventListener('click', () => {
-  initializeBoard();
-});
-// Обработчик для кнопки "Новая игра"
-newGameButton.addEventListener('click', () => {
-  initializeBoard(); // Запуск новой игры
-});
-// Запуск игры
-initializeBoard();
+// Starting the first game
+startNewGame();
